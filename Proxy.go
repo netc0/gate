@@ -52,9 +52,9 @@ func (this *GateProxy) init() {
 
 // RPC 注册后端
 func (this *GateProxy) RegisterBackend(info netco.RPCBackendInfo, reply* int) error {
-	log.Println("RegisterBackend", info)
-	if this.AuthCode != info.Auth {
-		return errors.New("Auth Code Invalid.")
+	log.Println("RegisterBackend: ", info)
+	if this.AuthCode != info.AuthCode {
+		return errors.New("Register Backend Auth Code Invalid.")
 	}
 	return this.addBackend(info)
 }
@@ -76,8 +76,8 @@ func (this *GateProxy) OnMessage(info netco.RPCMessage, reply* int) error {
 
 // BackendHeartBeat
 func (this *GateProxy) BackendHeartBeat(info netco.RPCBackendInfo, reply* int) error {
-	if this.AuthCode != info.Auth {
-		return errors.New("Auth Code Invalid.")
+	if this.AuthCode != info.AuthCode {
+		return errors.New("Heart Beat Auth Code Invalid.")
 	}
 
 	this.backendLock.Lock()
@@ -97,6 +97,7 @@ func (this *GateProxy) addBackend(info netco.RPCBackendInfo) error {
 	log.Println("注册后端", info)
 	this.backendLock.Lock()
 	defer this.backendLock.Unlock()
+
 	if this.Backends[info.Name] != nil {
 		delete(this.Backends, info.Name)
 	}
@@ -173,6 +174,7 @@ func (this *GateProxy) checkHeartBeat() {
 // 根据CRC获取路由, 返回 routeName, 后端名称
 func (this *GateProxy) crcBackend(crc uint32) (string, *BackendInfo) {
 	var backendName = this.backendCache[crc]
+	log.Println("crc", crc, " cache: ", this.backendCache[crc], " route:", this.backendRoute[crc])
 	if backendName == "" {
 		return "", nil
 	}
@@ -182,7 +184,7 @@ func (this *GateProxy) crcBackend(crc uint32) (string, *BackendInfo) {
 func DispatchRequest(this *GateProxy, msg netco.RPCGateRequest) error {
 	var routeName, backend = this.crcBackend(msg.RouteId)
 	if routeName == "" || backend == nil  {
-		return errors.New("Backend not exist")
+		return errors.New(fmt.Sprintf("Backend not exist: %v", msg.RouteId))
 	}
 
 	rs := backend.client.Call(routeName, msg, nil)
