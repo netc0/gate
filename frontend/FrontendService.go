@@ -5,6 +5,7 @@ import (
 	"github.com/netc0/netco"
 	"github.com/netc0/netco/common"
 	"github.com/netc0/gate/models"
+	"errors"
 )
 
 type Service struct {
@@ -28,7 +29,7 @@ func (this *Service) OnStart() {
 			this.onConfig()
 		}
 	})
-
+	// 回复客户端
 	this.App.OnEvent("frontend.response", func(obj interface{}) {
 		this.response(obj)
 	})
@@ -49,7 +50,7 @@ func (this *Service) onConfig() {
 	this.App.DispatchEvent("frontend.udp.restart", this.config)
 }
 
-//
+// 回复客户端
 func (this *Service) response(obj interface{}) {
 	var resp models.BackendResponseInfo
 	switch t:= obj.(type) {
@@ -63,4 +64,15 @@ func (this *Service) response(obj interface{}) {
 	} else {
 		logger.Debug("客户端不存在", resp.SessionId)
 	}
+}
+
+func GetClientData(obj interface{}) (def.MailClientData, error) {
+	var info def.MailClientData
+	switch t:= obj.(type) {
+	default:
+		return info, errors.New("cast to MailClientData failed")
+	case def.MailClientData:
+		info = t
+	}
+	return info, nil
 }

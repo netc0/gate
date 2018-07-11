@@ -64,7 +64,7 @@ func (this *Service) OnDestroy() {
 func (this *Service) onData(i models.FrontendRequestInfo) {
 	if be := this.getBackend(i.Route); be != nil {
 		var req def.MailClientData
-		req.IsRequest = true
+		req.Type = 0
 		req.ClientId = i.Session.GetId()
 		req.RequestId = i.RequestId
 		req.Route = i.Route
