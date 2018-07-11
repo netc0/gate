@@ -1,6 +1,9 @@
-package main
+package frontend
 
-import "log"
+import (
+	"log"
+	"github.com/netc0/gate/common"
+)
 
 // 传输接口
 type ITransporter interface {
@@ -13,9 +16,7 @@ type ITransporter interface {
 type Transporter struct {
 	ITransporter
 	running bool   // 是否在运行中
-	Host    string // 绑定的Host
 	OnNewConnection func(interface{})
-	OnDataPacket func(interface{}, uint32, uint32, []byte) // 收到消息
 }
 
 
@@ -24,8 +25,8 @@ func (this *Transporter) releaseSessions(){
 }
 
 func (this *Transporter) checkHeartBeat() {
-	var die []ISession
-	ForeachSession(func(s ISession) {
+	var die []common.ISession
+	ForeachSession(func(s common.ISession) {
 		if s.IsTimeout() {
 			die = append(die, s)
 		}

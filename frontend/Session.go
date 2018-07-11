@@ -1,47 +1,25 @@
-package main
+package frontend
 
 import (
 	"net"
 	"time"
 	"log"
 	"fmt"
+	"github.com/netc0/gate/common"
 )
 
-// ISession
-type ISession interface {
-	GetId() string          // 获取 ID
-	SetId(string)           // 设置 ID
-	HandleBytes([]byte)     // 接收数据
-	Response(uint32,[]byte) // 回复数据
-	Push([]byte)            // 推送数据
-	Kick()                  // 踢下线
-	IsTimeout() bool        // 是否心跳超时
-	Close()                 // 关闭会话
-	IsOk() bool             // 状态是否正常
-	HandlePacket(packet Packet) int // 处理数据包
-	send([]byte)            // 发送数据
-
-	onDataPacket([]byte)    // 收到data包
-
-	GetOwner() interface{} // 获取 owner
-	SetOwner(interface{})  // 设置 owner
-	updateHeartBeat()      // 更新心跳
-
-	AddCloseEventListener(func(session ISession))
-}
-
 type Session struct {
-	ISession
+	common.ISession
 	holder interface{}
 	id     string
 	isOk   bool
-	reader PacketReader
+	reader common.PacketReader
 	time   time.Time // 心跳
-	OnDataPacket func(interface{}, uint32, uint32, []byte)
+	OnDataPacket func(common.ISession, uint32, uint32, []byte)
 
 	owner interface{}
 
-	closeEventListeners []func(ISession)
+	closeEventListeners []func(common.ISession)
 }
 
 type TCPSession struct {
@@ -77,7 +55,7 @@ func (this *Session)HandleBytes(data[]byte){
 }
 // 回复数据
 func (this *Session)Response(requestId uint32, r[]byte){
-	var data = PacketResponseToBinary(PacketType_DATA, requestId, r)
+	var data = common.PacketResponseToBinary(common.PacketType_DATA, requestId, r)
 	this.send(data) // 必须回应SYN
 }
 // 推送数据
@@ -120,20 +98,20 @@ func (this *Session)Close(){
 // 状态是否正常
 func (this *Session)IsOk() bool{ return false }
 // 处理数据包
-func (this *Session)HandlePacket(packet Packet) int {
-	if packet.Type == PacketType_SYN { // 收到 SYN
-		var data = PacketToBinary(PacketType_ACK, nil)
+func (this *Session)HandlePacket(packet common.Packet) int {
+	this.time = time.Now()
+	if packet.Type == common.PacketType_SYN { // 收到 SYN
+		var data = common.PacketToBinary(common.PacketType_ACK, nil)
 		this.send(data) // 必须回应SYN
 		return 0
-	} else if packet.Type == PacketType_ACK { // 收到 ACK
+	} else if packet.Type == common.PacketType_ACK { // 收到 ACK
 		return 0
-	} else if packet.Type == PacketType_HEARTBEAT { // 纯心跳包 一般不需要
-
+	} else if packet.Type == common.PacketType_HEARTBEAT { // 纯心跳包 一般不需要
 		return 0
-	} else if packet.Type == PacketType_DATA { // on data
+	} else if packet.Type == common.PacketType_DATA { // on data
 		this.onDataPacket(packet.Body)
 		return 0
-	} else if packet.Type == PacketType_KICK { // on kick
+	} else if packet.Type == common.PacketType_KICK { // on kick
 
 	}
 	log.Println("packet type not support")
@@ -170,13 +148,13 @@ func (this* Session) onDataPacket(data []byte) {
 			uint32(data[6]) << 8 |
 			uint32(data[7]));
 	data = data[8:]
-	//this.transporter.onConnectionData(this, requestId, routeId, data)
+
 	if this.OnDataPacket != nil {
 		this.OnDataPacket(this, requestId, routeId, data)
 	}
 }
 // 关闭会话的回调
-func (this*Session) AddCloseEventListener(callback func(session ISession)) {
+func (this*Session) AddCloseEventListener(callback func(session common.ISession)) {
 	this.closeEventListeners = append(this.closeEventListeners, callback)
 }
 // 发送 TCP 消息
