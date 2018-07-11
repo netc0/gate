@@ -66,7 +66,7 @@ func RemoveSession(inst interface{}) {
 	defer sessionMutex.Unlock()
 	session, ok := inst.(common.ISession)
 	if ok {
-		log.Println("Frontend 关闭会话", session.GetId())
+		//log.Println("Frontend 关闭会话", session.GetId())
 		delete(sessions, session.GetId())
 	}
 }

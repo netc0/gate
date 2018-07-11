@@ -35,4 +35,5 @@ func (this *Service)OnRoutineConnected(remote string) {
 }
 func (this *Service)OnRoutineDisconnect(remote string, err error) {
 	logger.Debug("节点断开:", remote, err)
+	this.mailBox.Remove(remote)
 }
