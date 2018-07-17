@@ -1,6 +1,6 @@
 package backend
 
-type Config struct {
-	RPCBindAddress string
-}
-
+//type Config struct {
+//	RPCBindAddress string
+//}
+//

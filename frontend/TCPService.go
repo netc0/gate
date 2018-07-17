@@ -7,8 +7,7 @@ import (
 	"github.com/netc0/netco/def"
 	"github.com/netc0/netco"
 	"io"
-	"github.com/netc0/gate/common"
-	"github.com/netc0/gate/models"
+	"github.com/netc0/gate/protocol"
 )
 
 type TCPService struct {
@@ -78,6 +77,7 @@ func (this *TCPService) handleConnection(conn net.Conn) {
 	defer conn.Close()
 	defer RemoveSession(session)
 
+	session.id_int = NewSessionId()
 	session.OnDataPacket = this.OnDataPacket
 	session.time = time.Now() // 更新心跳
 	session.isOk = true
@@ -106,7 +106,13 @@ func (this *TCPService) handleConnection(conn net.Conn) {
 	}
 }
 
-func (this *TCPService) OnDataPacket(s common.ISession, req uint32, route uint32, data []byte) {
-	i := models.FrontendRequestInfo{Session:s, RequestId:req, Route:route, Data:data}
-	this.App.DispatchEvent("backend.onData", i)
+func (this *TCPService) OnDataPacket(s protocol.ISession, req uint32, route uint32, data []byte) {
+	var v def.MailClientInfo
+	v.ClientId = s.GetId()
+	v.RequestId = req
+	v.Route = route
+	v.Data  = data
+	v.SourceName = this.App.GetNodeName()
+	v.SourceAddress = this.App.GetNodeAddress()
+	this.App.DispatchEvent("backend.onData", v)
 }

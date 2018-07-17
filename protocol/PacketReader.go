@@ -1,4 +1,4 @@
-package common
+package protocol
 
 type PacketReader struct {
 	buffer    []byte

@@ -6,8 +6,7 @@ import (
 	"time"
 	"github.com/netc0/netco/def"
 	"github.com/netc0/netco"
-	"github.com/netc0/gate/common"
-	"github.com/netc0/gate/models"
+	"github.com/netc0/gate/protocol"
 )
 
 type UDPService struct {
@@ -63,6 +62,7 @@ func (this *UDPService) handleClient(conn *net.UDPConn) {
 	psession := GetSession(remoteAddr.String())
 	if psession == nil {
 		var session UDPSession
+		session.id_int = NewSessionId()
 		session.OnDataPacket = this.OnDataPacket
 		session.time = time.Now() // 更新心跳
 		session.isOk = true
@@ -80,7 +80,13 @@ func (this *UDPService) OnDestroy() {
 	logger.Debug("关闭 UDPService")
 }
 
-func (this *UDPService) OnDataPacket(s common.ISession, req uint32, route uint32, data []byte) {
-	i := models.FrontendRequestInfo{Session:s, RequestId:req, Route:route, Data:data}
-	this.App.DispatchEvent("backend.onData", i)
+func (this *UDPService) OnDataPacket(s protocol.ISession, req uint32, route uint32, data []byte) {
+	var v def.MailClientInfo
+	v.ClientId = s.GetId()
+	v.RequestId = req
+	v.Route = route
+	v.Data  = data
+	v.SourceName = this.App.GetNodeName()
+	v.SourceAddress = this.App.GetNodeAddress()
+	this.App.DispatchEvent("backend.onData", v)
 }

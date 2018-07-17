@@ -1,6 +1,4 @@
-package common
-
-import "hash/crc32"
+package protocol
 
 // 状态数据
 const (
@@ -64,14 +62,14 @@ func PacketResponseToBinary(Type int, requstId uint32, data []byte) []byte{
 	return result
 }
 
-func PacketPushToBinary(route string, data []byte) []byte{
+func PacketPushToBinary(routeId uint32, data []byte) []byte{
 	if data == nil { data = make([]byte, 0)}
 	var result = make([]byte, 8)
 	var bodyLen = 4 + uint32(len(data))
 
 	Type := PacketType_PUSH //推送消息
-	var routeId uint32
-	routeId = crc32.ChecksumIEEE([]byte(route))
+	//var routeId uint32
+	//routeId = crc32.ChecksumIEEE([]byte(route))
 
 	result[0] = byte(Type)
 	result[1] = byte(bodyLen >> 16)

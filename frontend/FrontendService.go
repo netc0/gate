@@ -4,8 +4,7 @@ import (
 	"github.com/netc0/netco/def"
 	"github.com/netc0/netco"
 	"github.com/netc0/netco/common"
-	"github.com/netc0/gate/models"
-	"errors"
+	"github.com/netc0/gate/protocol"
 )
 
 type Service struct {
@@ -34,6 +33,16 @@ func (this *Service) OnStart() {
 		this.response(obj)
 	})
 
+	// 推送消息客户端
+	this.App.OnEvent("frontend.push", func(obj interface{}) {
+		this.push(obj)
+	})
+
+	// 推送消息客户端
+	this.App.OnEvent("frontend.web.get_session", func(obj interface{}) {
+		this.get_session(obj)
+	})
+
 	// 启动 TCP 服务
 	this.App.RegisterService("frontend-tcp", &TCPService{App:this.App})
 	this.App.RegisterService("frontend-udp", &UDPService{App:this.App})
@@ -52,27 +61,48 @@ func (this *Service) onConfig() {
 
 // 回复客户端
 func (this *Service) response(obj interface{}) {
-	var resp models.BackendResponseInfo
-	switch t:= obj.(type) {
-	default:
-		return
-	case models.BackendResponseInfo:
-		resp = t
-	}
-	if s := GetSession(resp.SessionId); s != nil {
-		s.Response(resp.RequestId, resp.Data)
-	} else {
-		logger.Debug("客户端不存在", resp.SessionId)
+	if resp, err := def.CastMailClientInfo(obj); err == nil {
+		if s := GetSession(resp.ClientId); s != nil {
+			s.Response(resp.RequestId, resp.Data)
+		} else {
+			logger.Debug("客户端不存在", resp.ClientId)
+		}
 	}
 }
 
-func GetClientData(obj interface{}) (def.MailClientData, error) {
-	var info def.MailClientData
-	switch t:= obj.(type) {
-	default:
-		return info, errors.New("cast to MailClientData failed")
-	case def.MailClientData:
-		info = t
+// 回复客户端
+func (this *Service) push(obj interface{}) {
+	data, err := def.CastMailClientInfo(obj)
+	if err != nil {
+		logger.Debug(err)
+		return
 	}
-	return info, nil
+
+	if s := GetSession(data.ClientId); s != nil {
+		// 构造推送消息
+		raw := protocol.PacketPushToBinary(data.Route, data.Data)
+		//logger.Debug("推送消息", raw)
+		s.Push(raw)
+		return
+	}
+	logger.Debug("push 客户端不存在", data.ClientId)
+	var sdata def.MailClientInfo
+	sdata.RemoteAddress = data.SourceAddress
+	sdata.ClientId = data.ClientId
+	this.App.DispatchEvent("backend.removeSession", sdata)
+}
+
+// 获取会话信息
+func (this *Service) get_session(callback interface{}) {
+	switch t := callback.(type) {
+	case func(interface{}):
+		var ss []SessionInfo
+		ForeachSession(func(session protocol.ISession) {
+			sid := session.GetId()
+			id := session.GetIdInt32()
+			s := SessionInfo{SessionId:sid, Id:id}
+			ss = append(ss, s)
+		})
+		t(ss)
+	}
 }

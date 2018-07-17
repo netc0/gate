@@ -1,9 +1,13 @@
-package common
+package protocol
 
 // ISession
 type ISession interface {
 	GetId() string          // 获取 ID
 	SetId(string)           // 设置 ID
+
+	GetIdInt32() int32          // 获取 ID
+	SetIdInt32(int32)           // 设置 ID
+
 	HandleBytes([]byte)     // 接收数据
 	Response(uint32,[]byte) // 回复数据
 	Push([]byte)            // 推送数据

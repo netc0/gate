@@ -4,7 +4,6 @@ import (
 	"github.com/netc0/netco/def"
 	"github.com/netc0/netco"
 	"github.com/netc0/netco/common"
-	"github.com/netc0/gate/models"
 	"github.com/netc0/netco/rpc"
 	"sync"
 )
@@ -16,7 +15,6 @@ type Service struct {
 
 	mailBox rpc.IMailBox
 
-	Config Config
 	backends map[string]*Backend
 	backendMutex *sync.Mutex
 
@@ -34,12 +32,7 @@ func (this *Service) OnStart() {
 	this.backendMutex = new(sync.Mutex)
 
 	this.App.OnEvent("backend.onData", func(obj interface{}) {
-		switch t := obj.(type) {
-		default:
-			return 
-		case models.FrontendRequestInfo:
-			this.onData(t)
-		}
+		this.onData(obj)
 	})
 	// 注册后端节点
 	this.App.OnEvent("backend.reg", func(obj interface{}) {
@@ -51,7 +44,11 @@ func (this *Service) OnStart() {
 	})
 	// 回复客户端
 	this.App.OnEvent("backend.response", func(obj interface{}) {
-		this.response(obj)
+		this.App.DispatchEvent("frontend.response", obj)
+	})
+	// 通知后端, 此连接已经被移除
+	this.App.OnEvent("backend.removeSession", func(obj interface{}) {
+		this.onRemoveSession(obj)
 	})
 	go this.startBackend()
 }
@@ -61,34 +58,29 @@ func (this *Service) OnDestroy() {
 	this.mailBox.Stop()
 }
 
-func (this *Service) onData(i models.FrontendRequestInfo) {
-	if be := this.getBackend(i.Route); be != nil {
-		var req def.MailClientData
-		req.Type = 0
-		req.ClientId = i.Session.GetId()
-		req.RequestId = i.RequestId
-		req.Route = i.Route
-		req.Data = i.Data
-		this.mailBox.SendTo(be.address, &rpc.Mail{Type:def.Mail_RequestData, Object:req})
-	} else {
-		logger.Debug("没有这个后端", i.Route)
+func (this *Service) onData(obj interface{}) {
+	if info, err := def.CastMailClientInfo(obj); err == nil {
+		if be := this.getBackend(info.Route); be != nil {
+			this.mailBox.SendTo(be.address, &rpc.Mail{Type: def.Mail_RequestData, Object: info})
+		} else {
+			logger.Debug("没有这个后端", info.Route)
+		}
 	}
 }
 
 // 启动后端服务器
 func (this *Service) startBackend() {
-	logger.Debug("后端server", this.Config.RPCBindAddress)
-	this.mailBox = rpc.NewMailBox(this.Config.RPCBindAddress)
+	this.mailBox = rpc.NewMailBox(this.App.GetNodeAddress())
 	this.mailBox.SetHandler(this)
 	go this.mailBox.Start()
 }
 
 func (this* Service) reg(obj interface{}) {
-	var v def.MailOffice
+	var v def.MailNodeInfo
 	switch t := obj.(type) {
 	default:
 		return
-	case def.MailOffice:
+	case def.MailNodeInfo:
 		v = t
 	}
 
@@ -102,12 +94,11 @@ func (this* Service) reg(obj interface{}) {
 	be.name = v.Name
 	be.address = v.Address
 	this.backends[be.name] = &be
-
+	this.mailBox.Remove(be.address)
 	if err := this.mailBox.Connect(be.address); err != nil {
 		logger.Debug("注册后端失败:", err, v)
 		return
 	}
-
 	logger.Debug("后端注册成功", v)
 }
 
@@ -137,18 +128,10 @@ func (this *Service) getBackend(route uint32) *Backend {
 	return this.routeCache[route]
 }
 
-func (this *Service) response(obj interface{}) {
-	var resp def.MailClientData
-	switch t := obj.(type) {
-	default:
-		return
-	case def.MailClientData:
-		resp = t
+// 移除会话
+func (this *Service) onRemoveSession(obj interface{}) {
+	if info, err := def.CastMailClientInfo(obj); err == nil {
+		logger.Debug("移除会话..", info)
+		this.mailBox.SendTo(info.RemoteAddress, &rpc.Mail{Type:def.Mail_ClientNotFound, Object:info})
 	}
-
-	var info models.BackendResponseInfo
-	info.SessionId = resp.ClientId
-	info.RequestId = resp.RequestId
-	info.Data      = resp.Data
-	this.App.DispatchEvent("frontend.response", info)
 }

@@ -4,7 +4,7 @@ import (
 	"github.com/netc0/netco/rpc"
 	"github.com/netc0/netco/def"
 	"github.com/netc0/gate/frontend"
-	"github.com/netc0/gate/common"
+	"github.com/netc0/gate/protocol"
 )
 
 func (this *Service) OnNewMail(mail rpc.Mail) {
@@ -13,7 +13,7 @@ func (this *Service) OnNewMail(mail rpc.Mail) {
 		return
 	} else if mail.Type == def.Mail_Reg {
 		// 注册
-		var v def.MailOffice
+		var v def.MailNodeInfo
 		if err := mail.Decode(&v); err == nil {
 			this.App.DispatchEvent("backend.reg", v)
 		}
@@ -23,25 +23,35 @@ func (this *Service) OnNewMail(mail rpc.Mail) {
 			this.App.DispatchEvent("backend.addRoute", v)
 		}
 	} else if mail.Type == def.Mail_ResponseData {
-		var v def.MailClientData
+		var v def.MailClientInfo
 		if err := mail.Decode(&v); err != nil {
 			logger.Debug(err)
 			return
 		}
 		this.App.DispatchEvent("backend.response", v)
-	}  else if mail.Type == def.Mail_ClientLeaveNotifyMe {
+	} else if mail.Type == def.Mail_ClientLeaveNotifyMe {
 		// 如果客户端断开了发通知给我
-		var v def.MailClientData
+		var v def.MailClientInfo
 		if err := mail.Decode(&v); err != nil {
 			return
 		}
+		logger.Debug("监听此会话的断开", v)
 		if cli := frontend.GetSession(v.ClientId); cli != nil {
-			cli.AddCloseEventListener(func(session common.ISession) {
-				var obj def.MailClientData
+			cli.AddCloseEventListener(func(session protocol.ISession) {
+				var obj def.MailClientInfo
 				obj.ClientId = v.ClientId
 				this.mailBox.SendTo(v.SourceAddress, &rpc.Mail{Type:def.Mail_ClientLeaveNotification, Object:obj})
+				logger.Debug("发送断开通知", obj, v.SourceAddress)
 			})
 		}
+	} else if mail.Type == def.Mail_PushData {
+		// 推送消息
+		var v def.MailClientInfo
+		if err := mail.Decode(&v); err != nil {
+			logger.Debug(err, v)
+			return
+		}
+		this.App.DispatchEvent("frontend.push", v)
 	}
 }
 

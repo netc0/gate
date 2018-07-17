@@ -5,21 +5,22 @@ import (
 	"time"
 	"log"
 	"fmt"
-	"github.com/netc0/gate/common"
+	"github.com/netc0/gate/protocol"
 )
 
 type Session struct {
-	common.ISession
-	holder interface{}
-	id     string
-	isOk   bool
-	reader common.PacketReader
-	time   time.Time // 心跳
-	OnDataPacket func(common.ISession, uint32, uint32, []byte)
+	protocol.ISession
+	holder       interface{}
+	id           string
+	id_int       int32
+	isOk         bool
+	reader       protocol.PacketReader
+	time         time.Time // 心跳
+	OnDataPacket func(protocol.ISession, uint32, uint32, []byte)
 
 	owner interface{}
 
-	closeEventListeners []func(common.ISession)
+	closeEventListeners []func(protocol.ISession)
 }
 
 type TCPSession struct {
@@ -33,10 +34,21 @@ type UDPSession struct {
 	conn *net.UDPConn
 }
 
+type SessionInfo struct {
+	Id int32 `json:"id"`
+	SessionId string `json:"sessionId"`
+}
+
 // 获取 ID
 func (this *Session)GetId() string { return this.id }
 // 设置 ID
 func (this *Session) SetId(id string) { this.id = id }
+
+// 获取 ID
+func (this *Session)GetIdInt32() int32 { return this.id_int }
+// 设置 ID
+func (this *Session) SetIdInt32(id int32) { this.id_int = id }
+
 // 接收数据
 func (this *Session)HandleBytes(data[]byte){
 	this.time = time.Now()
@@ -55,7 +67,7 @@ func (this *Session)HandleBytes(data[]byte){
 }
 // 回复数据
 func (this *Session)Response(requestId uint32, r[]byte){
-	var data = common.PacketResponseToBinary(common.PacketType_DATA, requestId, r)
+	var data = protocol.PacketResponseToBinary(protocol.PacketType_DATA, requestId, r)
 	this.send(data) // 必须回应SYN
 }
 // 推送数据
@@ -98,20 +110,20 @@ func (this *Session)Close(){
 // 状态是否正常
 func (this *Session)IsOk() bool{ return false }
 // 处理数据包
-func (this *Session)HandlePacket(packet common.Packet) int {
+func (this *Session)HandlePacket(packet protocol.Packet) int {
 	this.time = time.Now()
-	if packet.Type == common.PacketType_SYN { // 收到 SYN
-		var data = common.PacketToBinary(common.PacketType_ACK, nil)
+	if packet.Type == protocol.PacketType_SYN { // 收到 SYN
+		var data = protocol.PacketToBinary(protocol.PacketType_ACK, nil)
 		this.send(data) // 必须回应SYN
 		return 0
-	} else if packet.Type == common.PacketType_ACK { // 收到 ACK
+	} else if packet.Type == protocol.PacketType_ACK { // 收到 ACK
 		return 0
-	} else if packet.Type == common.PacketType_HEARTBEAT { // 纯心跳包 一般不需要
+	} else if packet.Type == protocol.PacketType_HEARTBEAT { // 纯心跳包 一般不需要
 		return 0
-	} else if packet.Type == common.PacketType_DATA { // on data
+	} else if packet.Type == protocol.PacketType_DATA { // on data
 		this.onDataPacket(packet.Body)
 		return 0
-	} else if packet.Type == common.PacketType_KICK { // on kick
+	} else if packet.Type == protocol.PacketType_KICK { // on kick
 
 	}
 	log.Println("packet type not support")
@@ -154,7 +166,7 @@ func (this* Session) onDataPacket(data []byte) {
 	}
 }
 // 关闭会话的回调
-func (this*Session) AddCloseEventListener(callback func(session common.ISession)) {
+func (this*Session) AddCloseEventListener(callback func(session protocol.ISession)) {
 	this.closeEventListeners = append(this.closeEventListeners, callback)
 }
 // 发送 TCP 消息

@@ -2,7 +2,7 @@ package frontend
 
 import (
 	"log"
-	"github.com/netc0/gate/common"
+	"github.com/netc0/gate/protocol"
 )
 
 // 传输接口
@@ -25,8 +25,8 @@ func (this *Transporter) releaseSessions(){
 }
 
 func (this *Transporter) checkHeartBeat() {
-	var die []common.ISession
-	ForeachSession(func(s common.ISession) {
+	var die []protocol.ISession
+	ForeachSession(func(s protocol.ISession) {
 		if s.IsTimeout() {
 			die = append(die, s)
 		}
@@ -38,4 +38,3 @@ func (this *Transporter) checkHeartBeat() {
 		s.Close() //关闭
 	}
 }
-
