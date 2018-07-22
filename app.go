@@ -23,7 +23,7 @@ func (this *GateApp) parseArgs() {
 	flag.BoolVar(&help, "h", false, "显示帮助")
 	// frontend
 	this.frontendConfig.TCPBindAddress = *flag.String("t", ":9000", "TCP Bind Address")
-	this.frontendConfig.UDPBindAddress = *flag.String("u", ":9001", "UDP Bind Address")
+	this.frontendConfig.UDPBindAddress = *flag.String("u", ":9000", "UDP Bind Address")
 	// backend
 	mName := *flag.String("n", "gate", "Node Name")
 	mAddress := *flag.String("r", ":9002", "Node Bind Address")

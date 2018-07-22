@@ -75,20 +75,19 @@ func (this *TCPService) handleConnection(conn net.Conn) {
 	var session TCPSession
 
 	defer conn.Close()
-	defer RemoveSession(session)
+	defer GetSessionManager().RemoveSession(&session)
 
-	session.id_int = NewSessionId()
+	session.id_int = GetSessionManager().NewSessionId()
 	session.OnDataPacket = this.OnDataPacket
 	session.time = time.Now() // 更新心跳
 	session.isOk = true
 	session.conn = conn
 	session.holder = session
 	session.id = conn.RemoteAddr().String()
-	AddSession(&session)       // 新增会话
+	GetSessionManager().AddSession(&session)       // 新增会话
 
 	for {
 		if !session.IsOk() {
-			log.Println("break")
 			break
 		}
 		buf := make([]byte, 1024)
@@ -101,7 +100,6 @@ func (this *TCPService) handleConnection(conn net.Conn) {
 			break
 		}
 		data := buf[:size]
-
 		session.HandleBytes(data)
 	}
 }

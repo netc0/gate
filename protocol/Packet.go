@@ -1,13 +1,6 @@
 package protocol
 
 // 状态数据
-const (
-	// session 状态
-	SessionState_Invalid = iota // 无效
-	SessionState_Closed		 	// 已关闭
-	SessionState_Connected		// 已连接
-	SessionState_Disconnected   // 已断开
-)
 
 const (
 	PacketType_NAN = iota
@@ -43,19 +36,26 @@ func PacketToBinary(Type int, data []byte) []byte{
 	return result
 }
 
-func PacketResponseToBinary(Type int, requstId uint32, data []byte) []byte{
+func PacketResponseToBinary(Type int, requstId, statusCode uint32, data []byte) []byte{
 	if data == nil { data = make([]byte, 0)}
-	var result = make([]byte, 8)
-	var bodyLen = 4 + uint32(len(data))
+	headerSize := 12
+	var result = make([]byte, headerSize)
+	var bodyLen = uint32(headerSize) + uint32(len(data)) - 4
+	// type and size
 	result[0] = byte(Type)
 	result[1] = byte(bodyLen >> 16)
 	result[2] = byte(bodyLen >> 8)
 	result[3] = byte(bodyLen >> 0)
-
+	// requestId
 	result[4] = byte(requstId >> 24)
 	result[5] = byte(requstId >> 16)
 	result[6] = byte(requstId >> 8)
 	result[7] = byte(requstId >> 0)
+	// statusCode
+	result[8]  = byte(statusCode >> 24)
+	result[9]  = byte(statusCode >> 16)
+	result[10] = byte(statusCode >> 8)
+	result[11] = byte(statusCode >> 0)
 
 	result = append(result, data...)
 
@@ -68,8 +68,6 @@ func PacketPushToBinary(routeId uint32, data []byte) []byte{
 	var bodyLen = 4 + uint32(len(data))
 
 	Type := PacketType_PUSH //推送消息
-	//var routeId uint32
-	//routeId = crc32.ChecksumIEEE([]byte(route))
 
 	result[0] = byte(Type)
 	result[1] = byte(bodyLen >> 16)

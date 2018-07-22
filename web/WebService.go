@@ -25,16 +25,16 @@ var (
 )
 
 func (this *WebService) OnStart() {
-	logger.Prefix("web")
+	logger.Prefix("[web-service] ")
 	logger.Debug("启动 web 服务")
 	CurrentService = this
 
 	this.webServer = &http.Server{Addr:":9090", Handler:this}
 	this.webRoute = make(map[string]func(response http.ResponseWriter, request *http.Request))
 	// 注册路由
-	this.webRoute["/"] = route_home
-	this.webRoute["/echo"] = route_echo
-	this.webRoute["/get_session"] = route_get_session
+	this.webRoute["/"] = api_home
+	this.webRoute["/get_session"] = api_getSession
+	this.webRoute["/list_api"] = api_listAPI
 	http.NewServeMux()
 
 	go func() {
@@ -52,6 +52,9 @@ func (this *WebService) OnDestroy() {
 }
 
 func (this *WebService) ServeHTTP(response http.ResponseWriter, request *http.Request) {
+	// TODO 验证请求中的 token
+
+	// ...
 	if cb := this.webRoute[request.URL.Path]; cb != nil{
 		cb(response, request)
 	} else {

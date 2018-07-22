@@ -21,12 +21,12 @@ type Transporter struct {
 
 
 func (this *Transporter) releaseSessions(){
-	ClearSession(this)
+	GetSessionManager().ClearSession(this)
 }
 
 func (this *Transporter) checkHeartBeat() {
 	var die []protocol.ISession
-	ForeachSession(func(s protocol.ISession) {
+	GetSessionManager().ForeachSession(func(s protocol.ISession) {
 		if s.IsTimeout() {
 			die = append(die, s)
 		}

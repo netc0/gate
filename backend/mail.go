@@ -36,7 +36,7 @@ func (this *Service) OnNewMail(mail rpc.Mail) {
 			return
 		}
 		logger.Debug("监听此会话的断开", v)
-		if cli := frontend.GetSession(v.ClientId); cli != nil {
+		if cli := frontend.GetSessionManager().GetSession(v.ClientId); cli != nil {
 			cli.AddCloseEventListener(func(session protocol.ISession) {
 				var obj def.MailClientInfo
 				obj.ClientId = v.ClientId

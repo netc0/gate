@@ -59,12 +59,22 @@ func (this *Service) OnDestroy() {
 }
 
 func (this *Service) onData(obj interface{}) {
-	if info, err := def.CastMailClientInfo(obj); err == nil {
+	var info def.MailClientInfo
+	var err error
+	if info, err = def.CastMailClientInfo(obj); err == nil {
 		if be := this.getBackend(info.Route); be != nil {
-			this.mailBox.SendTo(be.address, &rpc.Mail{Type: def.Mail_RequestData, Object: info})
+			if e := this.mailBox.SendTo(be.address, &rpc.Mail{Type: def.Mail_RequestData, Object: info}); e != nil {
+				logger.Debug("发送到后端错误:", e)
+			}
 		} else {
 			logger.Debug("没有这个后端", info.Route)
+			// 直接返回 404
+			info.StatusCode = 404
+			info.Data = nil
+			this.App.DispatchEvent("frontend.response", info)
 		}
+	} else {
+		logger.Debug(err)
 	}
 }
 
@@ -131,7 +141,7 @@ func (this *Service) getBackend(route uint32) *Backend {
 // 移除会话
 func (this *Service) onRemoveSession(obj interface{}) {
 	if info, err := def.CastMailClientInfo(obj); err == nil {
-		logger.Debug("移除会话..", info)
+		logger.Debug("移除会话..", info.RemoteAddress)
 		this.mailBox.SendTo(info.RemoteAddress, &rpc.Mail{Type:def.Mail_ClientNotFound, Object:info})
 	}
 }

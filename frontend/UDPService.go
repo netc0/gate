@@ -42,27 +42,29 @@ func (this *UDPService) waitConnection(host string) {
 		log.Println("启动 UDP 失败", err)
 		return
 	}
-	//log.Println("Frontend启动 UDP:", host)
-	defer conn.Close()
 
+	defer conn.Close()
+	logger.Debug("Frontend启动 UDP", host)
 	for {
-		this.handleClient(conn)
+		if err := this.handleClient(conn); err != nil {
+			log.Println("UDP 异常", err)
+			//break
+		}
 	}
 }
 
-func (this *UDPService) handleClient(conn *net.UDPConn) {
+func (this *UDPService) handleClient(conn *net.UDPConn) error {
 	data := make([]byte, 2048)
 	n, remoteAddr, err := conn.ReadFromUDP(data)
 
 	if err != nil {
-		log.Println(err)
-		return
+		return err
 	}
 
-	psession := GetSession(remoteAddr.String())
+	psession := GetSessionManager().GetSession(remoteAddr.String())
 	if psession == nil {
 		var session UDPSession
-		session.id_int = NewSessionId()
+		session.id_int = GetSessionManager().NewSessionId()
 		session.OnDataPacket = this.OnDataPacket
 		session.time = time.Now() // 更新心跳
 		session.isOk = true
@@ -70,10 +72,11 @@ func (this *UDPService) handleClient(conn *net.UDPConn) {
 		session.remote = remoteAddr
 		session.holder = session
 		session.id = remoteAddr.String()
-		AddSession(&session)       // 新增会话
+		GetSessionManager().AddSession(&session)       // 新增会话
 	}
-	psession = GetSession(remoteAddr.String())
+	psession = GetSessionManager().GetSession(remoteAddr.String())
 	psession.HandleBytes(data[:n])
+	return nil
 }
 
 func (this *UDPService) OnDestroy() {
