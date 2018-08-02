@@ -78,7 +78,7 @@ func (this *Session)HandleBytes(data[]byte){
 }
 // 回复数据
 func (this *Session)Response(requestId, statusCode uint32, r[]byte){
-	var data = protocol.PacketResponseToBinary(protocol.PacketType_DATA, requestId, statusCode, r)
+	var data = protocol.PacketResponseToBinary(protocol.PacketType_RESPONSE, requestId, statusCode, r)
 	this.send(data) // 必须回应SYN
 }
 // 推送数据
@@ -132,8 +132,8 @@ func (this *Session)HandlePacket(packet protocol.Packet) int {
 		return 0
 	} else if packet.Type == protocol.PacketType_HEARTBEAT { // 纯心跳包 一般不需要
 		return 0
-	} else if packet.Type == protocol.PacketType_DATA { // on data
-		this.onDataPacket(packet.Body)
+	} else if packet.Type == protocol.PacketType_REQUEST { // on data
+		this.onRequestPacket(packet.Body)
 		return 0
 	} else if packet.Type == protocol.PacketType_KICK { // on kick
 
@@ -154,7 +154,7 @@ func (this* Session) send(data[]byte) {
 	}
 }
 // 收到数据包
-func (this* Session) onDataPacket(data []byte) {
+func (this* Session) onRequestPacket(data []byte) {
 	// [requestId] [routeId] [data]
 	// 1. 解析出requestId
 	var requestId uint32

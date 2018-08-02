@@ -7,9 +7,10 @@ const (
 	PacketType_SYN
 	PacketType_ACK
 	PacketType_HEARTBEAT
-	PacketType_DATA
+	PacketType_REQUEST
 	PacketType_PUSH
 	PacketType_KICK
+	PacketType_RESPONSE
 )
 
 type Packet struct {
@@ -36,21 +37,21 @@ func PacketToBinary(Type int, data []byte) []byte{
 	return result
 }
 
-func PacketResponseToBinary(Type int, requstId, statusCode uint32, data []byte) []byte{
+func PacketResponseToBinary(Type int, requestId, statusCode uint32, data []byte) []byte{
 	if data == nil { data = make([]byte, 0)}
 	headerSize := 12
 	var result = make([]byte, headerSize)
-	var bodyLen = uint32(headerSize) + uint32(len(data)) - 4
+	var bodyLen = uint32(len(data)) + 8 // (requestID and statusCode as body head)
 	// type and size
 	result[0] = byte(Type)
 	result[1] = byte(bodyLen >> 16)
 	result[2] = byte(bodyLen >> 8)
 	result[3] = byte(bodyLen >> 0)
 	// requestId
-	result[4] = byte(requstId >> 24)
-	result[5] = byte(requstId >> 16)
-	result[6] = byte(requstId >> 8)
-	result[7] = byte(requstId >> 0)
+	result[4] = byte(requestId >> 24)
+	result[5] = byte(requestId >> 16)
+	result[6] = byte(requestId >> 8)
+	result[7] = byte(requestId >> 0)
 	// statusCode
 	result[8]  = byte(statusCode >> 24)
 	result[9]  = byte(statusCode >> 16)
