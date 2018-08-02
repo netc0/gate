@@ -9,8 +9,6 @@ env:
 
 before_install:
   - go get -v github.com/netc0/netco
-  - go get github.com/mitchellh/gox
-  - gox -build-toolchain
 
 install:
   - # skip
@@ -24,4 +22,3 @@ script:
   - go test -p 1 -tags json -v ./...
 after_success:
   - echo "success"
-  - gox -output "dist/{{.OS}}_{{.Arch}}_{{.Dir}}"
