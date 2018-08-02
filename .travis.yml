@@ -4,10 +4,10 @@ go:
   - "1.10.2"
 
 sudo: required
+env:
+  - "PATH=/home/travis/gopath/bin:$PATH"
 
 before_install:
-  - export GOPATH=$HOME/gopath/src/github.com/netc0/gate
-  - export PATH=$PATH:$HOME/gopath/src/github.com/netc0/gate/bin
   - go get -v github.com/netc0/netco
 
 install:
@@ -21,4 +21,6 @@ before_script:
 script:
   - echo "script"
   - go get -t -v ./...
-  - go test -v -race ./...
+  - go test -p 1 -tags json -v ./...
+after_success:
+  - echo "success"
