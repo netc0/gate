@@ -5,15 +5,20 @@ go:
 
 sudo: required
 
-before_script:
-- sudo ntpdate -u time.google.com
-- date
-
-install:
+before_install:
   - export GOPATH=$HOME/gopath/src/github.com/netc0/gate
   - export PATH=$PATH:$HOME/gopath/src/github.com/netc0/gate/bin
   - go get -v github.com/netc0/netco
 
+install:
+  - # skip
+
+before_script:
+  - sudo ntpdate -u time.google.com
+  - date
+  - go vet ./...
+
 script:
   - echo "script"
-  - go build
+  - go get -t -v ./...
+  - go test -v -race ./...
