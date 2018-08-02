@@ -3,6 +3,8 @@ language: go
 go:
   - "1.10.2"
 
+go_import_path: github.com/netc0/gate
+
 sudo: required
 
 before_script:
