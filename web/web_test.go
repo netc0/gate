@@ -4,5 +4,5 @@ import (
     "testing"
 )
 
-func DoTest(t *testing.T) {
+func Test_web(t *testing.T) {
 }
