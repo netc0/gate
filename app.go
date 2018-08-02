@@ -9,12 +9,15 @@ import (
 	"os"
 	"github.com/netc0/netco/common"
 	"github.com/netc0/gate/web"
+	"syscall"
 )
 
 type GateApp struct {
 	netco.App
 
 	frontendConfig frontend.Config
+
+	IsTestCase bool
 }
 
 // 解析参数
@@ -54,6 +57,11 @@ func (this *GateApp) OnStart() {
 
 	//post config
 	this.App.DispatchEvent("frontend.config", this.frontendConfig)
+
+	if this.IsTestCase {
+		logger.Debug("测试")
+		syscall.Kill(syscall.Getpid(), syscall.SIGINT)
+	}
 }
 
 func (this *GateApp) OnDestroy() {
@@ -62,7 +70,6 @@ func (this *GateApp) OnDestroy() {
 
 func NewApp() *GateApp {
 	this := &GateApp{}
-	//this.Init()
 	this.Derived = this
 	return this
 }
