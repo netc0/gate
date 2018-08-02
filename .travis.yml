@@ -6,7 +6,8 @@ go:
 sudo: required
 
 install:
-  - echo "install"
+  - export GOPATH=$HOME/gopath/src/github.com/netc0/gate
+  - export PATH=$PATH:$HOME/gopath/src/github.com/netc0/gate/bin
   - go get -v github.com/netc0/netco
   - go build gate
 
