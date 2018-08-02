@@ -22,4 +22,4 @@ script:
   - go test -p 1 -tags json -v ./...
 after_success:
   - echo "success"
-  - bash <(curl -s https://codecov.io/bash)
+  - bash <(curl -s https://codecov.io/bash) -t bde232f1-4555-45b0-9e79-58deeb6eaa4d
