@@ -102,7 +102,7 @@ func (this *Session)Close(){
 	switch t := this.holder.(type){
 	default:
 		this.isOk = false
-		fmt.Println("know type: %v", t)
+		logger.Debug("unknow type:", t)
 	case TCPSession:
 		logger.Debug("close tcp conn")
 		t.conn.Close()
