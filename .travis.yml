@@ -1,15 +1,19 @@
 language: go
 
 go:
-  - 1.9
+  - "1.10.2"
 
 sudo: required
+
+before_script:
+- sudo ntpdate -u time.google.com
+- date
 
 install:
   - export GOPATH=$HOME/gopath/src/github.com/netc0/gate
   - export PATH=$PATH:$HOME/gopath/src/github.com/netc0/gate/bin
   - go get -v github.com/netc0/netco
-  - go build gate
 
 script:
   - echo "script"
+  - go build gate
