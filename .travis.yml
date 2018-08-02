@@ -28,6 +28,6 @@ after_success:
 notifications:
   email:
     recipients:
-        - 47dcxk9@bit-degree.com
+        - #
     on_success: change
     on_failure: always
