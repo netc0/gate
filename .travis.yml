@@ -18,4 +18,4 @@ install:
 
 script:
   - echo "script"
-  - go build gate
+  - go test ./...
