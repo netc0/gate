@@ -20,6 +20,7 @@ type TCPService struct {
 
 func (this *TCPService) OnStart() {
 	logger.Debug("启动 TCPService")
+	this.mIPFilter = NewIPFilter(true)
 
 	this.App.OnEvent("frontend.tcp.restart", func(obj interface{}) {
 		switch t:= obj.(type) {
@@ -72,6 +73,14 @@ func (this *TCPService) waitConnection(host string) {
 
 // 处理连接
 func (this *TCPService) handleConnection(conn net.Conn) {
+	if addr, ok := conn.RemoteAddr().(*net.TCPAddr); ok {
+		IPString := addr.IP.String()
+		if !this.mIPFilter.IsAllow(IPString) {
+			logger.Debug("禁止 tcp:", IPString)
+			return
+		}
+	}
+
 	var session TCPSession
 
 	defer conn.Close()

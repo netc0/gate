@@ -19,6 +19,7 @@ type UDPService struct {
 
 func (this *UDPService) OnStart() {
 	logger.Debug("启动 UDPService")
+	this.mIPFilter = NewIPFilter(true)
 
 	this.App.OnEvent("frontend.udp.restart", func(obj interface{}) {
 		switch t:= obj.(type) {
@@ -59,6 +60,12 @@ func (this *UDPService) handleClient(conn *net.UDPConn) error {
 
 	if err != nil {
 		return err
+	}
+
+	IPString := remoteAddr.IP.String()
+	if !this.mIPFilter.IsAllow(IPString) {
+		logger.Debug("禁止 tcp:", IPString)
+		return nil
 	}
 
 	psession := GetSessionManager().GetSession(remoteAddr.String())

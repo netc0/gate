@@ -17,6 +17,7 @@ type Transporter struct {
 	ITransporter
 	running bool   // 是否在运行中
 	OnNewConnection func(interface{})
+	mIPFilter IIPFilter
 }
 
 
