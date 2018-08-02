@@ -16,7 +16,6 @@ install:
 before_script:
   - sudo ntpdate -u time.google.com
   - date
-  - go vet ./...
 
 script:
   - echo "script"
